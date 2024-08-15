@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug tidy-json",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tidy-json",
+                    "--package=tidy-json"
+                ],
+                "filter": {
+                    "name": "tidy-json",
+                    "kind": "bin"
+                }
+            },
+            "args": ["./test_files/test_file_3.json", "--write", "--backup"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tidy-json'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tidy-json",
+                    "--package=tidy-json"
+                ],
+                "filter": {
+                    "name": "tidy-json",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

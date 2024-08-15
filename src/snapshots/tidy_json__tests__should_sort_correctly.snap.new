@@ -1,0 +1,17 @@
+---
+source: src/main.rs
+assertion_line: 275
+expression: sorted_json
+---
+Object {
+    "address": Object {
+        "city": String("Anytown"),
+        "street": String("123 Main St"),
+    },
+    "age": Number(43),
+    "hobbies": Array [
+        String("reading"),
+        String("cycling"),
+    ],
+    "name": String("John Doe"),
+}
