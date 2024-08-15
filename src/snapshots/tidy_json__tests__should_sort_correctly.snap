@@ -1,6 +1,5 @@
 ---
 source: src/main.rs
-assertion_line: 293
 expression: sorted_json
 ---
 Object {
