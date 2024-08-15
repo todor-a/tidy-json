@@ -1,6 +1,6 @@
 use clap::{CommandFactory, Parser, ValueEnum};
 use colored::*;
-use glob::{glob, GlobError};
+use glob::GlobError;
 use log::{debug, error, info};
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
@@ -10,6 +10,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 use thiserror::Error;
+
+mod files;
 
 #[derive(Error, Debug)]
 enum CustomError {
@@ -40,7 +42,11 @@ type Result<T> = std::result::Result<T, CustomError>;
 struct Args {
     /// File patterns to process
     #[arg(required = true, help = "File patterns to process (e.g., *.json)")]
-    patterns: Vec<String>,
+    include: Vec<String>,
+
+    /// File patterns to exclude
+    #[arg(short, long, help = "File patterns to exclude (e.g., *.json)")]
+    exclude: Option<Vec<String>>,
 
     /// Write the sorted JSON back to the input files
     #[arg(short, long, default_value = "false")]
@@ -49,6 +55,10 @@ struct Args {
     /// Create backups before modifying files
     #[arg(short, long, default_value = "false")]
     backup: bool,
+
+    /// Whether the files specified in .gitignore should also be sorted
+    #[arg(short = 'f', long, default_value = "false")]
+    ignore_git_ignore: bool,
 
     /// Specify the sort order
     #[arg(short = 'o', long, value_enum, default_value = "asc")]
@@ -90,25 +100,13 @@ fn run() -> Result<()> {
     let args = Args::parse();
     let start_time = Instant::now();
 
-    if args.patterns.is_empty() {
+    if args.include.is_empty() {
         return Err(CustomError::CustomError(
-            "No file patterns provided".to_string(),
+            "No include file patterns provided".to_string(),
         ));
     }
 
-    let files: Vec<PathBuf> = args
-        .patterns
-        .iter()
-        .flat_map(|pattern| {
-            glob(pattern)
-                .expect("Failed to read glob pattern")
-                .filter_map(|entry| match entry {
-                    Ok(path) if is_json_file(&path) => Some(path),
-                    _ => None,
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect();
+    let files = files::list_files(".", args.include, args.exclude, args.ignore_git_ignore);
 
     let results: Vec<_> = files
         .par_iter()
@@ -152,12 +150,6 @@ fn run() -> Result<()> {
     );
 
     Ok(())
-}
-
-fn is_json_file(path: &PathBuf) -> bool {
-    path.extension()
-        .map(|ext| ext == "json" || ext == "jsonc")
-        .unwrap_or(false)
 }
 
 fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) -> Result<()> {
@@ -320,13 +312,5 @@ mod tests {
 
         let json_no_indent = r#"{"key": "value"}"#;
         assert_eq!(detect_indent(json_no_indent), None);
-    }
-
-    #[test]
-    fn test_is_json_file() {
-        assert!(is_json_file(&PathBuf::from("test.json")));
-        assert!(is_json_file(&PathBuf::from("test.jsonc")));
-        assert!(!is_json_file(&PathBuf::from("test.txt")));
-        assert!(!is_json_file(&PathBuf::from("test")));
     }
 }
