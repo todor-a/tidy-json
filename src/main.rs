@@ -16,13 +16,13 @@ mod files;
 #[derive(Error, Debug)]
 enum CustomError {
     #[error("I/O error: {0}")]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error("JSON error: {0}")]
-    JsonError(#[from] serde_json::Error),
+    Json(#[from] serde_json::Error),
     #[error("Glob error: {0}")]
-    GlobError(#[from] GlobError),
+    Glob(#[from] GlobError),
     #[error("{0}")]
-    CustomError(String),
+    Custom(String),
 }
 
 #[derive(Debug, Clone, ValueEnum)]
@@ -68,9 +68,7 @@ struct Args {
 fn print_error(err: &CustomError) {
     eprintln!("{} {}", "Error:".red().bold(), err);
     match err {
-        CustomError::CustomError(msg)
-            if msg == "No JSON files found matching the provided patterns" =>
-        {
+        CustomError::Custom(msg) if msg == "No JSON files found matching the provided patterns" => {
             eprintln!(
                 "{}",
                 "Make sure the file patterns are correct and the files exist.".yellow()
@@ -101,7 +99,7 @@ fn run() -> Result<()> {
     let start_time = Instant::now();
 
     if args.include.is_empty() {
-        return Err(CustomError::CustomError(
+        return Err(CustomError::Custom(
             "No include file patterns provided".to_string(),
         ));
     }
