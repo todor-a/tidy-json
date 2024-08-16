@@ -20,7 +20,7 @@ pub fn list_files<P: AsRef<Path>>(
                 .filter(|entry| {
                     let path = entry.path();
                     let relative_path = path.strip_prefix(root.as_ref()).unwrap();
-                    is_json_file(&path.to_path_buf())
+                    is_json_file(path)
                         && Pattern::new(pattern).unwrap().matches_path(relative_path)
                         && !is_excluded(relative_path, &exclude_patterns)
                 })
@@ -39,7 +39,7 @@ fn is_excluded(path: &Path, exclude_patterns: &Option<Vec<String>>) -> bool {
     }
 }
 
-pub fn is_json_file(path: &PathBuf) -> bool {
+pub fn is_json_file(path: &Path) -> bool {
     path.extension()
         .map(|ext| ext == "json" || ext == "jsonc")
         .unwrap_or(false)
@@ -65,7 +65,7 @@ mod tests {
         let temp_path = temp_dir.path();
 
         std::process::Command::new("git")
-            .args(&["init"])
+            .args(["init"])
             .current_dir(temp_path)
             .output()
             .expect("Failed to initialize git repo");
