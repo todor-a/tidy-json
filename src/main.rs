@@ -68,8 +68,7 @@ struct Args {
 fn print_error(err: &CustomError) {
     eprintln!("{} {}", "Error:".red().bold(), err);
     match err {
-        CustomError::Custom(msg) if msg == "No JSON files found matching the provided patterns" => {
-            eprintln!(
+        CustomError::Custom(msg) if msg == "No JSON files found matching the provided patterns" => {         eprintln!(
                 "{}",
                 "Make sure the file patterns are correct and the files exist.".yellow()
             );
