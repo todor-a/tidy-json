@@ -5,6 +5,10 @@ A cli tool for sorting JSON files.
 ## Install
 
 ```sh
+brew install todor-a/tap/tidy-json 
+```
+
+```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/todor-a/tidy-json/releases/download/v0.1.0/tidy-json-installer.sh | sh
 ```
 
