@@ -16,7 +16,11 @@
                     "kind": "bin"
                 }
             },
-            "args": ["./test_files/test_file_3.json", "--write", "--backup"],
+            "args": [
+                "**/*.json",
+                "--write",
+                "--exclude=\"**/ignored.json\""
+            ],
             "cwd": "${workspaceFolder}"
         },
         {

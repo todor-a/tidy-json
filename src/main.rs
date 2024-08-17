@@ -42,11 +42,11 @@ type Result<T> = std::result::Result<T, CustomError>;
 struct Args {
     /// File patterns to process
     #[arg(required = true, help = "File patterns to process (e.g., *.json)")]
-    include: Vec<String>,
+    include: Vec<PathBuf>,
 
     /// File patterns to exclude
     #[arg(short, long, help = "File patterns to exclude (e.g., *.json)")]
-    exclude: Option<Vec<String>>,
+    exclude: Option<Vec<PathBuf>>,
 
     /// Write the sorted JSON back to the input files
     #[arg(short, long, default_value = "false")]
@@ -55,10 +55,6 @@ struct Args {
     /// Create backups before modifying files
     #[arg(short, long, default_value = "false")]
     backup: bool,
-
-    /// Whether the files specified in .gitignore should also be sorted
-    #[arg(short = 'f', long, default_value = "false")]
-    ignore_git_ignore: bool,
 
     /// Specify the sort order
     #[arg(short = 'o', long, value_enum, default_value = "asc")]
@@ -104,7 +100,8 @@ fn run() -> Result<()> {
         ));
     }
 
-    let files = files::list_files(".", args.include, args.exclude, args.ignore_git_ignore);
+    let files =
+        files::list_files(args.include, args.exclude, vec![files::Extension::Json]).unwrap();
 
     let results: Vec<_> = files
         .par_iter()
@@ -154,7 +151,6 @@ fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) ->
     let data = fs::read_to_string(path)?;
     let json: Value = serde_json::from_str(&data)?;
 
-    debug!("json {:?}", json);
     debug!("Usign sort order {:?}", order);
 
     let sorted_json = sort(&json, order);
@@ -168,8 +164,6 @@ fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) ->
 
         let indent = detect_indent(&data);
 
-        debug!("Using indent {:?}", indent);
-
         let sorted_data = match indent {
             Some(indent_str) => {
                 serde_json::to_string_pretty(&sorted_json)?.replace("  ", &indent_str)
@@ -180,8 +174,8 @@ fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) ->
         fs::write(path, sorted_data)?;
         info!("Sorted JSON written back to {:?}", path);
     } else {
-        let sorted_data = serde_json::to_string_pretty(&sorted_json)?;
-        info!("Sorted JSON for {:?}:\n{}", path, sorted_data);
+        serde_json::to_string_pretty(&sorted_json)?;
+        info!("Sorted {:?}.\n", path);
     }
 
     Ok(())
@@ -192,8 +186,6 @@ fn sort(value: &Value, order: &SortOrder) -> Value {
         Value::Object(map) => {
             let sorted_map: BTreeMap<_, _> = map.iter().collect();
             let mut entries: Vec<_> = sorted_map.into_iter().collect();
-
-            debug!("hm? {:?}", entries);
 
             match order {
                 SortOrder::AlphabeticalAsc => entries.sort_by(|(a, _), (b, _)| a.cmp(b)),
