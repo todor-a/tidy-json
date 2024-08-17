@@ -2,16 +2,15 @@ use clap::{CommandFactory, Parser, ValueEnum};
 use colored::*;
 use glob::GlobError;
 use log::{debug, error, info};
-use rand::seq::SliceRandom;
 use rayon::prelude::*;
 use serde_json::Value;
-use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 use thiserror::Error;
 
 mod files;
+mod sort;
 
 #[derive(Error, Debug)]
 enum CustomError {
@@ -26,7 +25,7 @@ enum CustomError {
 }
 
 #[derive(Debug, Clone, ValueEnum)]
-enum SortOrder {
+pub enum SortOrder {
     #[clap(name = "asc", alias = "alphabetical-asc", alias = "a")]
     AlphabeticalAsc,
     #[clap(name = "desc", alias = "alphabetical-desc", alias = "d")]
@@ -157,7 +156,7 @@ fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) ->
     debug!("json {:?}", json);
     debug!("Usign sort order {:?}", order);
 
-    let sorted_json = sort(&json, order);
+    let sorted_json = sort::sort(&json, order);
 
     if write {
         if backup {
@@ -187,35 +186,6 @@ fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) ->
     Ok(())
 }
 
-fn sort(value: &Value, order: &SortOrder) -> Value {
-    match value {
-        Value::Object(map) => {
-            let sorted_map: BTreeMap<_, _> = map.iter().collect();
-            let mut entries: Vec<_> = sorted_map.into_iter().collect();
-
-            debug!("hm? {:?}", entries);
-
-            match order {
-                SortOrder::AlphabeticalAsc => entries.sort_by(|(a, _), (b, _)| a.cmp(b)),
-                SortOrder::AlphabeticalDesc => entries.sort_by(|(a, _), (b, _)| b.cmp(a)),
-                SortOrder::Random => {
-                    let mut rng = rand::thread_rng();
-                    entries.shuffle(&mut rng);
-                }
-            }
-
-            Value::Object(
-                entries
-                    .into_iter()
-                    .map(|(k, v)| (k.clone(), sort(v, order)))
-                    .collect(),
-            )
-        }
-        Value::Array(arr) => Value::Array(arr.iter().map(|v| sort(v, order)).collect()),
-        _ => value.clone(),
-    }
-}
-
 fn detect_indent(json: &str) -> Option<String> {
     json.lines()
         .skip_while(|line| line.trim().is_empty())
@@ -232,61 +202,6 @@ fn detect_indent(json: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use insta::assert_debug_snapshot;
-
-    #[test]
-    fn should_sort_descending() {
-        let data = r#"
-        {
-            "name": "John Doe",
-            "age": 43,
-            "address": {
-                "street": "123 Main St",
-                "city": "Anytown"
-            },
-            "hobbies": ["reading", "cycling"]
-        }"#;
-
-        let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_json = sort(&json, &SortOrder::AlphabeticalDesc);
-        assert_debug_snapshot!(sorted_json);
-    }
-
-    #[test]
-    fn should_sort_correctly() {
-        let data = r#"
-        {
-            "name": "John Doe",
-            "age": 43,
-            "address": {
-                "street": "123 Main St",
-                "city": "Anytown"
-            },
-            "hobbies": ["reading", "cycling"]
-        }"#;
-
-        let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_json = sort(&json, &SortOrder::AlphabeticalAsc);
-        assert_debug_snapshot!(sorted_json);
-    }
-
-    #[test]
-    fn should_apply_uniform_indent() {
-        let data = r#"
-        {
-            "name": "John Doe",
-          "age": 43,
-            "address": {
-             "street": "123 Main St",
-                "city": "Anytown"
-         },
-            "hobbies": ["reading", "cycling"]
-        }"#;
-
-        let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_json = sort(&json, &SortOrder::AlphabeticalAsc);
-        assert_debug_snapshot!(sorted_json);
-    }
 
     #[test]
     fn test_detect_indent() {
