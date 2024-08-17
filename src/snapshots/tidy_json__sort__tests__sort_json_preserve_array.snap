@@ -1,0 +1,12 @@
+---
+source: src/sort.rs
+expression: sorted_obj
+---
+Object {
+    "a": Number(1),
+    "b": Number(2),
+    "c": Array [
+        Number(4),
+        Number(3),
+    ],
+}
