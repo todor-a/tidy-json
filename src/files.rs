@@ -5,6 +5,9 @@ use ignore::WalkBuilder;
 use log::debug;
 use std::path::{Path, PathBuf};
 
+#[cfg(test)]
+use std::println as debug;
+
 #[derive(Debug, PartialEq)]
 pub enum Extension {
     Json,
@@ -17,9 +20,6 @@ impl Extension {
         }
     }
 }
-
-#[cfg(test)]
-use std::println as debug;
 
 fn create_patterns(patterns: Vec<PathBuf>) -> Result<Vec<Pattern>> {
     patterns
