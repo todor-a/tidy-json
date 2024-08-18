@@ -1,7 +1,6 @@
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
 
-use log::debug;
 use serde_json::Value;
 
 use crate::SortOrder;
@@ -11,8 +10,6 @@ pub fn sort(value: &Value, order: &SortOrder) -> Value {
         Value::Object(map) => {
             let sorted_map: BTreeMap<_, _> = map.iter().collect();
             let mut entries: Vec<_> = sorted_map.into_iter().collect();
-
-            debug!("hm? {:?}", entries);
 
             match order {
                 SortOrder::AlphabeticalAsc => entries.sort_by(|(a, _), (b, _)| a.cmp(b)),

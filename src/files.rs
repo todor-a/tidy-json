@@ -1,48 +1,108 @@
+use anyhow::*;
+use glob::{MatchOptions, Pattern};
+use ignore::WalkBuilder;
+#[cfg(not(test))]
+use log::debug;
 use std::path::{Path, PathBuf};
 
-use glob::Pattern;
-use ignore::WalkBuilder;
+#[cfg(test)]
+use std::println as debug;
 
-pub fn list_files<P: AsRef<Path>>(
-    root: P,
-    include_patterns: Vec<String>,
-    exclude_patterns: Option<Vec<String>>,
-    ignore_git_ignore: bool,
-) -> Vec<PathBuf> {
-    include_patterns
-        .iter()
-        .flat_map(|pattern| {
-            WalkBuilder::new(root.as_ref())
-                .hidden(false)
-                .git_ignore(!ignore_git_ignore)
-                .build()
-                .filter_map(std::result::Result::ok)
-                .filter(|entry| {
-                    let path = entry.path();
-                    let relative_path = path.strip_prefix(root.as_ref()).unwrap();
-                    is_json_file(path)
-                        && Pattern::new(pattern).unwrap().matches_path(relative_path)
-                        && !is_excluded(relative_path, &exclude_patterns)
-                })
-                .map(|entry| entry.path().to_path_buf())
-                .collect::<Vec<_>>()
+#[derive(Debug, PartialEq)]
+pub enum Extension {
+    Json,
+}
+
+impl Extension {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Json => "json",
+        }
+    }
+}
+
+fn create_patterns(patterns: Vec<PathBuf>) -> Result<Vec<Pattern>> {
+    patterns
+        .into_iter()
+        .map(|path| {
+            let pattern_str = path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid pattern path"))?
+                .trim_matches('"'); // Remove surrounding quotes if present
+            Pattern::new(pattern_str).map_err(|e| e.into())
         })
         .collect()
 }
 
-fn is_excluded(path: &Path, exclude_patterns: &Option<Vec<String>>) -> bool {
-    match exclude_patterns {
-        Some(patterns) => patterns
-            .iter()
-            .any(|pattern| Pattern::new(pattern).unwrap().matches_path(path)),
-        None => false,
-    }
+fn matches_patterns(patterns: &[Pattern], path: &Path) -> bool {
+    let options = MatchOptions {
+        case_sensitive: false,
+        require_literal_separator: false,
+        require_literal_leading_dot: false,
+    };
+    patterns
+        .iter()
+        .any(|pattern| pattern.matches_path_with(path, options))
 }
 
-pub fn is_json_file(path: &Path) -> bool {
+fn matches_exclude_patterns(patterns: &[Pattern], path: &Path) -> bool {
+    let options = MatchOptions {
+        case_sensitive: false,
+        require_literal_separator: false,
+        require_literal_leading_dot: false,
+    };
+    patterns.iter().any(|pattern| {
+        let path_str = path.to_str().unwrap_or("");
+        pattern.matches_with(path_str, options)
+    })
+}
+
+fn has_allowed_extension(path: &Path, allowed_extensions: &[Extension]) -> bool {
     path.extension()
-        .map(|ext| ext == "json" || ext == "jsonc")
+        .and_then(|ext| ext.to_str())
+        .map(|ext| allowed_extensions.iter().any(|e| e.as_str() == ext))
         .unwrap_or(false)
+}
+
+pub fn list_files(
+    include_patterns: Vec<PathBuf>,
+    exclude_patterns: Option<Vec<PathBuf>>,
+    allowed_extensions: Vec<Extension>,
+) -> Result<Vec<PathBuf>> {
+    let mut walk = WalkBuilder::new(".");
+    walk.hidden(true).ignore(true).git_global(true);
+
+    let include_patterns: Vec<Pattern> = create_patterns(include_patterns)?;
+    let exclude_patterns: Vec<Pattern> = exclude_patterns
+        .map(create_patterns)
+        .transpose()?
+        .unwrap_or_default();
+
+    let mut matching_files = Vec::new();
+
+    for entry in walk.build() {
+        let entry = entry.context("Failed to read directory entry")?;
+        if entry.file_type().map_or(false, |ft| ft.is_file()) {
+            let path = entry.path();
+            let relative_path = path.strip_prefix(".").unwrap_or(path);
+
+            // Create both versions of the path for matching
+            let relative_path_with_dot = PathBuf::from(".").join(relative_path);
+
+            if (matches_patterns(&include_patterns, &relative_path_with_dot)
+                || matches_patterns(&include_patterns, relative_path))
+                && !(matches_exclude_patterns(&exclude_patterns, &relative_path_with_dot)
+                    || matches_exclude_patterns(&exclude_patterns, relative_path))
+                && has_allowed_extension(relative_path, &allowed_extensions)
+            {
+                matching_files.push(path.to_path_buf());
+            }
+        }
+    }
+
+    debug!("Found {:?} files.", matching_files);
+
+    Ok(matching_files)
 }
 
 #[cfg(test)]
@@ -52,17 +112,30 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_is_json_file() {
-        assert!(is_json_file(&PathBuf::from("test.json")));
-        assert!(is_json_file(&PathBuf::from("test.jsonc")));
-        assert!(!is_json_file(&PathBuf::from("test.txt")));
-        assert!(!is_json_file(&PathBuf::from("test")));
+    fn test_matches_patterns() {
+        let patterns = vec![Pattern::new("./test1.json").unwrap()];
+
+        let matching_path = Path::new("test1.json");
+        assert!(!matches_patterns(&patterns, matching_path));
+
+        let matching_path = Path::new("./test1.json");
+        assert!(matches_patterns(&patterns, matching_path));
+
+        let non_matching_path = Path::new("test2.json");
+        assert!(!matches_patterns(&patterns, non_matching_path));
+
+        let subdirectory_path = Path::new("subdir/test1.json");
+        assert!(!matches_patterns(&patterns, subdirectory_path));
     }
 
     #[test]
     fn test_list_files() {
         let temp_dir = TempDir::new().unwrap();
         let temp_path = temp_dir.path();
+
+        let original_dir = std::env::current_dir().unwrap();
+
+        std::env::set_current_dir(temp_path).unwrap();
 
         std::process::Command::new("git")
             .args(["init"])
@@ -83,61 +156,40 @@ mod tests {
         File::create(subdir.join("test5.jsonc")).unwrap();
 
         let files = list_files(
-            temp_path,
-            vec!["**/*.json".to_string(), "**/*.jsonc".to_string()],
+            vec![PathBuf::from("**/*.json")],
             None,
-            false,
-        );
+            vec![Extension::Json],
+        )
+        .unwrap();
 
-        assert_eq!(files.len(), 4);
-        assert!(files.contains(&temp_path.join("test1.json")));
-        assert!(files.contains(&temp_path.join("test2.jsonc")));
-        assert!(files.contains(&temp_path.join("subdir/test4.json")));
-        assert!(files.contains(&temp_path.join("subdir/test5.jsonc")));
-        assert!(!files.contains(&temp_path.join("ignored.json")));
+        debug!("result {:?}, a {:?}", files, &temp_path.join("test1.json"));
 
-        let files = list_files(
-            temp_path,
-            vec!["**/*.json".to_string(), "**/*.jsonc".to_string()],
-            None,
-            true,
-        );
-
-        assert_eq!(files.len(), 5);
-        assert!(files.contains(&temp_path.join("ignored.json")));
-
-        let files = list_files(temp_path, vec!["**/test*.json".to_string()], None, false);
         assert_eq!(files.len(), 2);
-        assert!(files.contains(&temp_path.join("test1.json")));
-        assert!(files.contains(&temp_path.join("subdir/test4.json")));
+        assert!(files.contains(&PathBuf::from("./test1.json")));
+        assert!(files.contains(&PathBuf::from("./subdir/test4.json")));
 
-        let files = list_files(temp_path, vec!["**/ignored.json".to_string()], None, false);
-        assert_eq!(files.len(), 0);
+        assert!(!files.contains(&PathBuf::from("./test2.jsonc")));
+        assert!(!files.contains(&PathBuf::from("./test3.txt")));
+        assert!(!files.contains(&PathBuf::from("./ignored.json")));
+        assert!(!files.contains(&PathBuf::from("./subdir/test5.jsonc")));
 
-        let files = list_files(
-            temp_path,
-            vec!["**/*.json".to_string(), "**/*.jsonc".to_string()],
-            Some(vec!["**/test2*".to_string()]),
-            false,
-        );
-        assert_eq!(files.len(), 3);
-        assert!(files.contains(&temp_path.join("test1.json")));
-        assert!(!files.contains(&temp_path.join("test2.jsonc")));
-        assert!(files.contains(&temp_path.join("subdir/test4.json")));
-        assert!(files.contains(&temp_path.join("subdir/test5.jsonc")));
-        assert!(!files.contains(&temp_path.join("ignored.json")));
+        // test single file
+        File::create(temp_path.join("foo.json")).unwrap();
+        File::create(temp_path.join("bar.json")).unwrap();
 
         let files = list_files(
-            temp_path,
-            vec!["**/*.json".to_string(), "**/*.jsonc".to_string()],
-            Some(vec!["**/test2*".to_string()]),
-            true,
-        );
-        assert_eq!(files.len(), 4);
-        assert!(files.contains(&temp_path.join("test1.json")));
-        assert!(!files.contains(&temp_path.join("test2.jsonc")));
-        assert!(files.contains(&temp_path.join("subdir/test4.json")));
-        assert!(files.contains(&temp_path.join("subdir/test5.jsonc")));
-        assert!(files.contains(&temp_path.join("ignored.json")));
+            vec![PathBuf::from("./foo.json")],
+            Some(vec![PathBuf::from("./test2bar.json")]),
+            vec![Extension::Json],
+        )
+        .unwrap();
+
+        debug!("result {:?}, a {:?}", files, &temp_path.join("foo.json"));
+
+        assert_eq!(files.len(), 1);
+        assert!(files.contains(&PathBuf::from("./foo.json")));
+        assert!(!files.contains(&PathBuf::from("./bar.json")));
+
+        std::env::set_current_dir(original_dir).unwrap();
     }
 }
