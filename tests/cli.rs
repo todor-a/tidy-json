@@ -8,7 +8,8 @@ use std::process::Command;
 use tempfile::TempDir;
 
 fn assert_file_content<P: AsRef<Path>>(path: P, expect_sorted: bool) {
-    let content: Value = serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
+    let str = &fs::read_to_string(path).expect("Should have been able to read test file.");
+    let content: Value = serde_json::from_str(str).expect("Should have been able to load content");
 
     with_settings!({
         description => if expect_sorted {"should be sorted"} else {"should not be sorted"},
@@ -22,10 +23,6 @@ fn find_content_in_file() -> Result<(), Box<dyn std::error::Error>> {
     let temp_dir = TempDir::new().unwrap();
     let temp_path = temp_dir.path();
 
-    let original_dir = std::env::current_dir().unwrap();
-
-    std::env::set_current_dir(temp_path).unwrap();
-
     fs::write(
         temp_path.join("sample.json"),
         r#"
@@ -36,28 +33,25 @@ fn find_content_in_file() -> Result<(), Box<dyn std::error::Error>> {
     }"#,
     )
     .unwrap();
-
     let mut cmd = Command::cargo_bin("tidy-json")?;
-    cmd.arg("sample.json").arg("--write");
+
+    cmd.arg("sample.json")
+        .arg("--write")
+        .current_dir(temp_dir.as_ref());
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Processed 1 file(s) in"));
 
     assert_file_content(temp_path.join("sample.json"), true);
-
-    std::env::set_current_dir(original_dir).unwrap();
 
     Ok(())
 }
 
 #[test]
 fn correctly_formats_single_file() -> Result<(), Box<dyn std::error::Error>> {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
     let temp_path = temp_dir.path();
-
-    let original_dir = std::env::current_dir().unwrap();
-
-    std::env::set_current_dir(temp_path).unwrap();
 
     fs::write(
         temp_path.join("sample.json"),
@@ -71,26 +65,22 @@ fn correctly_formats_single_file() -> Result<(), Box<dyn std::error::Error>> {
     .unwrap();
 
     let mut cmd = Command::cargo_bin("tidy-json")?;
-    cmd.arg("./sample.json").arg("--write");
+    cmd.arg("./sample.json")
+        .arg("--write")
+        .current_dir(temp_dir.as_ref());
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Processed 1 file(s) in"));
 
     assert_file_content(temp_path.join("sample.json"), true);
 
-    std::env::set_current_dir(original_dir).unwrap();
-
     Ok(())
 }
 
 #[test]
 fn correctly_applies_exludes() -> Result<(), Box<dyn std::error::Error>> {
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
     let temp_path = temp_dir.path();
-
-    let original_dir = std::env::current_dir().unwrap();
-
-    std::env::set_current_dir(temp_path).unwrap();
 
     fs::write(
         temp_path.join("sample.json"),
@@ -117,7 +107,8 @@ fn correctly_applies_exludes() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("tidy-json")?;
     cmd.arg("**/*.json")
         .arg("--write")
-        .arg("--exclude=\"**/ignored.json\"");
+        .arg("--exclude=\"**/ignored.json\"")
+        .current_dir(temp_dir.as_ref());
 
     cmd.assert()
         .success()
@@ -125,8 +116,6 @@ fn correctly_applies_exludes() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_file_content(temp_path.join("sample.json"), true);
     assert_file_content(temp_path.join("ignored.json"), false);
-
-    std::env::set_current_dir(original_dir).unwrap();
 
     Ok(())
 }

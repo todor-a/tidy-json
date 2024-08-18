@@ -4,7 +4,7 @@ description: should be sorted
 expression: content
 ---
 Object {
-    "c": Number(3),
-    "b": Number(2),
     "a": Number(1),
+    "b": Number(2),
+    "c": Number(3),
 }
