@@ -6,25 +6,28 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
 
-pub const UNSORTED_JSON_1: &str = r#"
+pub const UNSORTED_JSON: &str = r#"
 {
     "c": 3,
     "b": 2,
     "a": 1
 }"#;
 
-const UNSORTED_JSON_2: &str = r#"
-{
-    "f": 3,
-    "d": 2,
-    "g": 1
-}"#;
+pub fn init_git_repo(path: &Path) -> &std::path::Path {
+    std::process::Command::new("git")
+        .args(["init"])
+        .current_dir(path)
+        .output()
+        .expect("Failed to initialize git repo");
+
+    path
+}
 
 pub fn setup_test_directory() -> TempDir {
     TempDir::new().unwrap()
 }
 
-pub fn create_json_file(path: &Path, content: &str) {
+pub fn create_file(path: &Path, content: &str) {
     fs::write(path, content).unwrap();
 }
 
@@ -41,8 +44,8 @@ pub fn setup_excludes_test() -> (TempDir, PathBuf, PathBuf) {
     let sample_path = temp_path.join("sample.json");
     let ignored_path = temp_path.join("ignored.json");
 
-    create_json_file(&sample_path, UNSORTED_JSON_1);
-    create_json_file(&ignored_path, UNSORTED_JSON_2);
+    create_file(&sample_path, UNSORTED_JSON);
+    create_file(&ignored_path, UNSORTED_JSON);
 
     (temp_dir, sample_path, ignored_path)
 }

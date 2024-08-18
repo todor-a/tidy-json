@@ -2,7 +2,7 @@ use assert_cmd::prelude::*;
 use rstest::rstest;
 use std::fs::{self};
 
-mod common;
+pub mod common;
 
 #[test]
 fn test_excludes_flag_ignores_specified_file() -> Result<(), Box<dyn std::error::Error>> {
@@ -89,9 +89,9 @@ fn test_write_flag_sorts_json(
     let temp_dir = common::setup_test_directory();
     let temp_path = temp_dir.path();
 
-    common::create_json_file(
+    common::create_file(
         temp_path.join(test_file_name).as_path(),
-        common::UNSORTED_JSON_1,
+        common::UNSORTED_JSON,
     );
 
     let mut cmd = common::run_cli(include_pattern, flags, temp_dir.as_ref());
