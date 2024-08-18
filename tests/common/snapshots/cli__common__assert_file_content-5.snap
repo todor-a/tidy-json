@@ -1,0 +1,10 @@
+---
+source: tests/common/mod.rs
+description: should not be sorted
+expression: content
+---
+Object {
+    "c": Number(3),
+    "b": Number(2),
+    "a": Number(1),
+}

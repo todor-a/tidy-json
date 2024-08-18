@@ -150,7 +150,7 @@ fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) ->
     let data = fs::read_to_string(path)?;
     let json: Value = serde_json::from_str(&data)?;
 
-    debug!("Usign sort order {:?}", order);
+    debug!("Using sort order {:?}", order);
 
     let sorted_json = sort::sort(&json, order);
 
