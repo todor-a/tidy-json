@@ -1,6 +1,5 @@
 ---
 source: tests/common/mod.rs
-assertion_line: 76
 description: should not be sorted
 expression: content
 ---
