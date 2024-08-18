@@ -1,0 +1,11 @@
+---
+source: tests/common/mod.rs
+assertion_line: 76
+description: should not be sorted
+expression: content
+---
+Object {
+    "f": Number(3),
+    "d": Number(2),
+    "g": Number(1),
+}
