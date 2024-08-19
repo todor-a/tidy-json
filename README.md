@@ -1,4 +1,4 @@
-# 🧹 json-tidy
+# 🧹 tidy-json
 
 A cli tool for sorting JSON files.
 
