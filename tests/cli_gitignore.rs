@@ -24,7 +24,7 @@ pub fn setup_gitnore_test_dir() -> (TempDir, PathBuf, PathBuf) {
 }
 
 #[test]
-fn test_gitignored_files_successfuly_ignored() -> Result<(), Box<dyn std::error::Error>> {
+fn test_gitignored_files_successfully_ignored() -> Result<(), Box<dyn std::error::Error>> {
     let (temp_dir, sample_path, ignored_path) = setup_gitnore_test_dir();
 
     let mut cmd = common::run_cli("**/*.json", &["--write"], temp_dir.path());
