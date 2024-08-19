@@ -1,10 +1,14 @@
 use assert_cmd::prelude::*;
-use insta::{assert_debug_snapshot, with_settings};
 use serde_json::Value;
 use std::fs::{self};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
+
+#[derive(serde::Serialize)]
+pub struct Info {
+    pub used_flags: Vec<&'static str>,
+}
 
 pub const UNSORTED_JSON: &str = r#"
 {
@@ -69,15 +73,25 @@ pub fn assert_expected_processed_files_count(processed_files: &[String], expecte
     );
 }
 
-pub fn assert_file_content<P: AsRef<Path>>(path: P, expect_sorted: bool) {
+pub enum AssertFileContentOption {
+    Sorted(bool),
+    Description(String),
+}
+
+pub fn get_snapshot_info<P: AsRef<Path>>(
+    path: P,
+    option: AssertFileContentOption,
+) -> (Value, String) {
     let str = &fs::read_to_string(path).expect("Should have been able to read test file.");
     let content: Value = serde_json::from_str(str).expect("Should have been able to load content");
 
-    with_settings!({
-        description => if expect_sorted {"should be sorted"} else {"should not be sorted"},
-    }, {
-        assert_debug_snapshot!(content);
-    });
+    let description = match option {
+        AssertFileContentOption::Description(desc) => desc,
+        AssertFileContentOption::Sorted(true) => "should be sorted".to_string(),
+        AssertFileContentOption::Sorted(false) => "should not be sorted".to_string(),
+    };
+
+    (content, description)
 }
 
 pub fn assert_file_processed(

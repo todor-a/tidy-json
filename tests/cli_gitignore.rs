@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use assert_cmd::prelude::*;
+use insta::{assert_debug_snapshot, with_settings};
 use tempfile::TempDir;
 
 pub mod common;
@@ -37,8 +38,23 @@ fn test_gitignored_files_successfuly_ignored() -> Result<(), Box<dyn std::error:
 
     common::assert_expected_processed_files_count(&processed_files, 1);
 
-    common::assert_file_content(sample_path, true);
-    common::assert_file_content(ignored_path, false);
+    let (content, description) =
+        common::get_snapshot_info(sample_path, common::AssertFileContentOption::Sorted(true));
+
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
+
+    let (content, description) =
+        common::get_snapshot_info(ignored_path, common::AssertFileContentOption::Sorted(false));
+
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
 
     Ok(())
 }

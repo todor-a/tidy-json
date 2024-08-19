@@ -1,5 +1,5 @@
 ---
-source: tests/common/mod.rs
+source: tests/cli_gitignore.rs
 description: should not be sorted
 expression: content
 ---

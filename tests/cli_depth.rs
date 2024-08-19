@@ -1,4 +1,5 @@
 use assert_cmd::prelude::*;
+use insta::{assert_debug_snapshot, with_settings};
 
 pub mod common;
 
@@ -24,7 +25,16 @@ fn test_sorts_correctly_without_depth_arg() -> Result<(), Box<dyn std::error::Er
 
     let _ = cmd.assert().success().get_output().stdout.clone();
 
-    common::assert_file_content(temp_path.join("sample.json"), true);
+    let (content, description) = common::get_snapshot_info(
+        temp_path.join("sample.json"),
+        common::AssertFileContentOption::Description("should be sorted on all levels".to_string()),
+    );
+
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
 
     Ok(())
 }
@@ -40,7 +50,18 @@ fn test_sorts_correctly_with_depth_arg() -> Result<(), Box<dyn std::error::Error
 
     let _ = cmd.assert().success().get_output().stdout.clone();
 
-    common::assert_file_content(temp_path.join("sample.json"), true);
+    let (content, description) = common::get_snapshot_info(
+        temp_path.join("sample.json"),
+        common::AssertFileContentOption::Description(
+            "should be sorted only on level 1".to_string(),
+        ),
+    );
+
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
 
     Ok(())
 }

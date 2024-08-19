@@ -5,8 +5,7 @@ use log::{debug, error, info};
 use rayon::prelude::*;
 use serde_json::Value;
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 use std::time::Instant;
 use thiserror::Error;
 
@@ -33,30 +32,6 @@ pub enum SortOrder {
     AlphabeticalDesc,
     #[clap(name = "rand", alias = "random", alias = "r")]
     Random,
-}
-
-#[derive(Debug, Clone)]
-enum NumberOrString {
-    Number(u32),
-    Str(String),
-}
-
-impl FromStr for NumberOrString {
-    type Err = &'static str;
-    fn from_str(s: &str) -> std::result::Result<NumberOrString, &'static str> {
-        Ok(s.parse::<u32>()
-            .map(NumberOrString::Number)
-            .unwrap_or_else(|_| NumberOrString::Str(s.to_string())))
-    }
-}
-
-pub struct Configuraion {
-    write: bool,
-    backup: bool,
-    include: Vec<PathBuf>,
-    order: SortOrder,
-    depth: Option<u32>,
-    exlude: Option<Vec<PathBuf>>,
 }
 
 type Result<T> = std::result::Result<T, CustomError>;

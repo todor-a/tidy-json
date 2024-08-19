@@ -1,4 +1,5 @@
 use assert_cmd::prelude::*;
+use insta::{assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use std::fs::{self};
 
@@ -23,8 +24,22 @@ fn test_excludes_flag_ignores_specified_file() -> Result<(), Box<dyn std::error:
 
     common::assert_expected_processed_files_count(&processed_files, 1);
 
-    common::assert_file_content(sample_path, true);
-    common::assert_file_content(ignored_path, false);
+    let (content, description) =
+        common::get_snapshot_info(sample_path, common::AssertFileContentOption::Sorted(true));
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
+
+    let (content, description) =
+        common::get_snapshot_info(ignored_path, common::AssertFileContentOption::Sorted(false));
+
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
 
     Ok(())
 }
@@ -48,8 +63,21 @@ fn test_excludes_flag_processes_non_excluded_files() -> Result<(), Box<dyn std::
 
     common::assert_expected_processed_files_count(&processed_files, 1);
 
-    common::assert_file_content(sample_path, true);
-    common::assert_file_content(ignored_path, false);
+    let (content, description) =
+        common::get_snapshot_info(sample_path, common::AssertFileContentOption::Sorted(true));
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
+
+    let (content, description) =
+        common::get_snapshot_info(ignored_path, common::AssertFileContentOption::Sorted(false));
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
 
     Ok(())
 }
@@ -98,7 +126,16 @@ fn test_write_flag_sorts_json(
 
     cmd.assert().success();
 
-    common::assert_file_content(temp_path.join(include_pattern), expect_sorted);
+    let (content, description) = common::get_snapshot_info(
+        temp_path.join(include_pattern),
+        common::AssertFileContentOption::Sorted(expect_sorted),
+    );
+
+    with_settings!({
+        description => description,
+    }, {
+        assert_debug_snapshot!(content);
+    });
 
     Ok(())
 }

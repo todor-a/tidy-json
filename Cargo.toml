@@ -27,6 +27,7 @@ tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 rstest = "0.22.0"
+serde = {version = "1.0.0", features = ["derive"]}
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
