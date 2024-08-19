@@ -1,0 +1,14 @@
+---
+source: tests/common/mod.rs
+description: should be sorted
+expression: content
+---
+Object {
+    "a": Number(1),
+    "b": Object {
+        "c": Number(1),
+        "b": Number(5),
+        "a": Number(2),
+    },
+    "c": Number(3),
+}

@@ -5,7 +5,8 @@ use log::{debug, error, info};
 use rayon::prelude::*;
 use serde_json::Value;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::time::Instant;
 use thiserror::Error;
 
@@ -34,6 +35,30 @@ pub enum SortOrder {
     Random,
 }
 
+#[derive(Debug, Clone)]
+enum NumberOrString {
+    Number(u32),
+    Str(String),
+}
+
+impl FromStr for NumberOrString {
+    type Err = &'static str;
+    fn from_str(s: &str) -> std::result::Result<NumberOrString, &'static str> {
+        Ok(s.parse::<u32>()
+            .map(NumberOrString::Number)
+            .unwrap_or_else(|_| NumberOrString::Str(s.to_string())))
+    }
+}
+
+pub struct Configuraion {
+    write: bool,
+    backup: bool,
+    include: Vec<PathBuf>,
+    order: SortOrder,
+    depth: Option<u32>,
+    exlude: Option<Vec<PathBuf>>,
+}
+
 type Result<T> = std::result::Result<T, CustomError>;
 
 #[derive(Parser, Debug)]
@@ -54,6 +79,10 @@ struct Args {
     /// Create backups before modifying files
     #[arg(short, long, default_value = "false")]
     backup: bool,
+
+    /// Specify how deep the sorting should go
+    #[arg(short, long)]
+    depth: Option<u32>,
 
     /// Specify the sort order
     #[arg(short = 'o', long, value_enum, default_value = "asc")]
@@ -106,7 +135,7 @@ fn run() -> Result<()> {
         .par_iter()
         .map(|path| {
             let file_start_time = Instant::now();
-            let result = process_file(path, args.write, args.backup, &args.order);
+            let result = process_file(path, args.write, args.backup, &args.order, args.depth);
             let duration = file_start_time.elapsed();
             (path, result, duration)
         })
@@ -146,13 +175,19 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) -> Result<()> {
+fn process_file(
+    path: &PathBuf,
+    write: bool,
+    backup: bool,
+    order: &SortOrder,
+    depth: Option<u32>,
+) -> Result<()> {
     let data = fs::read_to_string(path)?;
     let json: Value = serde_json::from_str(&data)?;
 
     debug!("Using sort order {:?}", order);
 
-    let sorted_json = sort::sort(&json, order);
+    let sorted_json = sort::sort(&json, order, 0, depth);
 
     if write {
         if backup {

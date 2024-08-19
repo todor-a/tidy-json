@@ -5,7 +5,18 @@ use serde_json::Value;
 
 use crate::SortOrder;
 
-pub fn sort(value: &Value, order: &SortOrder) -> Value {
+pub fn sort(
+    value: &Value,
+    order: &SortOrder,
+    current_depth: u32,
+    desired_depth: Option<u32>,
+) -> Value {
+    if let Some(desired_depth) = desired_depth {
+        if current_depth == desired_depth {
+            return value.clone();
+        }
+    }
+
     match value {
         Value::Object(map) => {
             let sorted_map: BTreeMap<_, _> = map.iter().collect();
@@ -23,11 +34,15 @@ pub fn sort(value: &Value, order: &SortOrder) -> Value {
             Value::Object(
                 entries
                     .into_iter()
-                    .map(|(k, v)| (k.clone(), sort(v, order)))
+                    .map(|(k, v)| (k.clone(), sort(v, order, current_depth + 1, desired_depth)))
                     .collect(),
             )
         }
-        Value::Array(arr) => Value::Array(arr.iter().map(|v| sort(v, order)).collect()),
+        Value::Array(arr) => Value::Array(
+            arr.iter()
+                .map(|v| sort(v, order, current_depth + 1, desired_depth))
+                .collect(),
+        ),
         _ => value.clone(),
     }
 }
@@ -47,7 +62,7 @@ mod tests {
         }"#;
 
         let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_json = sort(&json, &SortOrder::AlphabeticalAsc);
+        let sorted_json = sort(&json, &SortOrder::AlphabeticalAsc, 0, None);
         assert_debug_snapshot!(sorted_json);
     }
 
@@ -61,7 +76,7 @@ mod tests {
         }"#;
 
         let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc);
+        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc, 0, None);
         assert_debug_snapshot!(sorted_obj);
     }
 
@@ -78,7 +93,24 @@ mod tests {
         }"#;
 
         let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc);
+        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc, 0, None);
+        assert_debug_snapshot!(sorted_obj);
+    }
+
+    #[test]
+    fn test_sort_json_nested_depth_1() {
+        let data = r#"
+        {
+            "c": {
+                "b": 4,
+                "a": 3
+            },
+            "b": 2,
+            "a": 1
+        }"#;
+
+        let json: Value = serde_json::from_str(data).unwrap();
+        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc, 0, Some(1));
         assert_debug_snapshot!(sorted_obj);
     }
 
@@ -91,7 +123,7 @@ mod tests {
             "a": 1
         }"#;
         let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc);
+        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc, 0, None);
         assert_debug_snapshot!(sorted_obj);
     }
 
@@ -104,7 +136,7 @@ mod tests {
             "c": 1
         }"#;
         let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_obj = sort(&json, &SortOrder::AlphabeticalDesc);
+        let sorted_obj = sort(&json, &SortOrder::AlphabeticalDesc, 0, None);
         assert_debug_snapshot!(sorted_obj);
     }
 
@@ -210,7 +242,7 @@ mod tests {
             "a": 1
         }"#;
         let json: Value = serde_json::from_str(data).unwrap();
-        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc);
+        let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc, 0, None);
         assert_debug_snapshot!(sorted_obj);
     }
 
