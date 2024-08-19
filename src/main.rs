@@ -103,6 +103,8 @@ fn run() -> Result<()> {
         ));
     }
 
+    debug!("Running with include = {:?}", &args.include);
+
     let files =
         files::list_files(args.include, args.exclude, vec![files::Extension::Json]).unwrap();
 
@@ -120,7 +122,6 @@ fn run() -> Result<()> {
         .iter()
         .filter(|(_, result, _)| result.is_ok())
         .count();
-    let total_duration = start_time.elapsed();
 
     for (path, result, duration) in results {
         match result {
@@ -137,6 +138,8 @@ fn run() -> Result<()> {
             ),
         }
     }
+
+    let total_duration = start_time.elapsed();
 
     println!(
         "{}",

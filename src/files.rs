@@ -84,6 +84,9 @@ pub fn list_files(
         let entry = entry.context("Failed to read directory entry")?;
         if entry.file_type().map_or(false, |ft| ft.is_file()) {
             let path = entry.path();
+
+            debug!("Examining path {:?}.", path);
+
             let relative_path = path.strip_prefix(".").unwrap_or(path);
 
             // Create both versions of the path for matching
@@ -100,7 +103,7 @@ pub fn list_files(
         }
     }
 
-    debug!("Found {:?} files.", matching_files);
+    debug!("Matching files found: {:?}.", matching_files);
 
     Ok(matching_files)
 }
