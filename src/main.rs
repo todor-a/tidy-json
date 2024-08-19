@@ -3,6 +3,7 @@ use colored::*;
 use glob::GlobError;
 use log::{debug, error, info};
 use rayon::prelude::*;
+use serde::Serialize;
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
@@ -34,6 +35,14 @@ pub enum SortOrder {
     Random,
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+pub enum IndentStyle {
+    #[clap()]
+    Tabs,
+    #[clap()]
+    Spaces,
+}
+
 type Result<T> = std::result::Result<T, CustomError>;
 
 #[derive(Parser, Debug)]
@@ -62,6 +71,26 @@ struct Args {
     /// Specify the sort order
     #[arg(short = 'o', long, value_enum, default_value = "asc")]
     order: SortOrder,
+
+    /// Specify the desired indent
+    #[arg(short, long)]
+    indent: Option<usize>,
+
+    /// Specify the desired indent style
+    #[arg(long)]
+    indent_style: Option<IndentStyle>,
+}
+
+#[derive(Debug)]
+struct Configuration {
+    include: Vec<PathBuf>,
+    exclude: Option<Vec<PathBuf>>,
+    write: bool,
+    backup: bool,
+    order: SortOrder,
+    depth: Option<u32>,
+    indent: Option<usize>,
+    indent_style: Option<IndentStyle>,
 }
 
 fn print_error(err: &CustomError) {
@@ -103,16 +132,27 @@ fn run() -> Result<()> {
         ));
     }
 
-    debug!("Running with include = {:?}", &args.include);
+    let cfg = Configuration {
+        backup: args.backup,
+        depth: args.depth,
+        exclude: args.exclude,
+        include: args.include,
+        indent: args.indent,
+        order: args.order,
+        write: args.write,
+        indent_style: args.indent_style,
+    };
+
+    debug!("Running with configuration {:?}", &cfg);
 
     let files =
-        files::list_files(args.include, args.exclude, vec![files::Extension::Json]).unwrap();
+        files::list_files(&cfg.include, &cfg.exclude, vec![files::Extension::Json]).unwrap();
 
     let results: Vec<_> = files
         .par_iter()
         .map(|path| {
             let file_start_time = Instant::now();
-            let result = process_file(path, args.write, args.backup, &args.order, args.depth);
+            let result = process_file(path, &cfg);
             let duration = file_start_time.elapsed();
             (path, result, duration)
         })
@@ -153,37 +193,23 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn process_file(
-    path: &PathBuf,
-    write: bool,
-    backup: bool,
-    order: &SortOrder,
-    depth: Option<u32>,
-) -> Result<()> {
+fn process_file(path: &PathBuf, cfg: &Configuration) -> Result<()> {
     let data = fs::read_to_string(path)?;
     let json: Value = serde_json::from_str(&data)?;
 
-    debug!("Using sort order {:?}", order);
+    let sorted_json = sort::sort(&json, &cfg.order, 0, cfg.depth);
 
-    let sorted_json = sort::sort(&json, order, 0, depth);
-
-    if write {
-        if backup {
+    if cfg.write {
+        if cfg.backup {
             let backup_path = path.with_extension("bak");
             fs::copy(path, &backup_path)?;
             info!("Backup created: {:?}", backup_path);
         }
 
-        let indent = detect_indent(&data);
+        let indent = get_indent(cfg, &data);
+        let formatted_json = format_json(&sorted_json, &indent);
+        fs::write(path, formatted_json)?;
 
-        let sorted_data = match indent {
-            Some(indent_str) => {
-                serde_json::to_string_pretty(&sorted_json)?.replace("  ", &indent_str)
-            }
-            None => serde_json::to_string_pretty(&sorted_json)?,
-        };
-
-        fs::write(path, sorted_data)?;
         info!("Sorted JSON written back to {:?}", path);
     } else {
         serde_json::to_string_pretty(&sorted_json)?;
@@ -204,6 +230,23 @@ fn detect_indent(json: &str) -> Option<String> {
                 None
             }
         })
+}
+
+fn get_indent(cfg: &Configuration, data: &str) -> String {
+    cfg.indent
+        .map(|indent| match cfg.indent_style {
+            Some(IndentStyle::Tabs) => "\t".repeat(indent),
+            _ => " ".repeat(indent),
+        })
+        .unwrap_or_else(|| detect_indent(data).unwrap_or_else(|| " ".to_string()))
+}
+
+fn format_json(value: &serde_json::Value, indent: &str) -> String {
+    let mut buf = Vec::new();
+    let formatter = serde_json::ser::PrettyFormatter::with_indent(indent.as_bytes());
+    let mut ser = serde_json::Serializer::with_formatter(&mut buf, formatter);
+    value.serialize(&mut ser).unwrap();
+    String::from_utf8(buf).unwrap()
 }
 
 #[cfg(test)]

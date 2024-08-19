@@ -1,0 +1,13 @@
+---
+source: tests/cli_indent.rs
+description: "--write"
+expression: content
+---
+[
+  {
+    "a": "1 2  3",
+    "b": "foo",
+    "c": 3
+  },
+  "should be sorted"
+]

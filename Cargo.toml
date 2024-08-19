@@ -12,7 +12,7 @@ repository = "https://github.com/todor-a/tidy-json"
 clap = { version = "4.0", features = ["derive"] }
 glob = "0.3"
 ignore = "0.4"
-serde_json = {version = "1.0", features = ["preserve_order"]}
+serde_json = { version = "1.0", features = ["preserve_order"] }
 thiserror = "1.0"
 log = "0.4"
 env_logger = "0.11"
@@ -20,14 +20,14 @@ rayon = "1.5"
 colored = "2.0"
 rand = "0.8"
 anyhow = "1.0"
+serde = { version = "1.0.0", features = ["derive"] }
 
 [dev-dependencies]
-insta = {version = "1.39.0", features = ["json"]}
+insta = { version = "1.39.0", features = ["json"] }
 tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 rstest = "0.22.0"
-serde = {version = "1.0.0", features = ["derive"]}
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
@@ -47,7 +47,12 @@ tap = "todor-a/homebrew-tap"
 # Publish jobs to run in CI
 publish-jobs = ["homebrew"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
 # The archive format to use for windows builds (defaults .zip)
 windows-archive = ".tar.gz"
 # The archive format to use for non-windows builds (defaults .tar.xz)

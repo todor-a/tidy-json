@@ -1,0 +1,12 @@
+---
+source: tests/cli_indent.rs
+expression: content
+---
+(
+    Object {
+        "a": String("1 2  3"),
+        "b": String("foo"),
+        "c": Number(3),
+    },
+    "should be sorted",
+)

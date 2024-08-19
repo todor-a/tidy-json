@@ -65,15 +65,16 @@ fn has_allowed_extension(path: &Path, allowed_extensions: &[Extension]) -> bool 
 }
 
 pub fn list_files(
-    include_patterns: Vec<PathBuf>,
-    exclude_patterns: Option<Vec<PathBuf>>,
+    include_patterns: &[PathBuf],
+    exclude_patterns: &Option<Vec<PathBuf>>,
     allowed_extensions: Vec<Extension>,
 ) -> Result<Vec<PathBuf>> {
     let mut walk = WalkBuilder::new(".");
     walk.hidden(true).ignore(true).git_global(true);
 
-    let include_patterns: Vec<Pattern> = create_patterns(include_patterns)?;
+    let include_patterns: Vec<Pattern> = create_patterns(include_patterns.to_vec())?;
     let exclude_patterns: Vec<Pattern> = exclude_patterns
+        .clone()
         .map(create_patterns)
         .transpose()?
         .unwrap_or_default();
@@ -158,12 +159,8 @@ mod tests {
         File::create(subdir.join("test4.json")).unwrap();
         File::create(subdir.join("test5.jsonc")).unwrap();
 
-        let files = list_files(
-            vec![PathBuf::from("**/*.json")],
-            None,
-            vec![Extension::Json],
-        )
-        .unwrap();
+        let files =
+            list_files(&[PathBuf::from("**/*.json")], &None, vec![Extension::Json]).unwrap();
 
         debug!("result {:?}, a {:?}", files, &temp_path.join("test1.json"));
 
@@ -181,8 +178,8 @@ mod tests {
         File::create(temp_path.join("bar.json")).unwrap();
 
         let files = list_files(
-            vec![PathBuf::from("./foo.json")],
-            Some(vec![PathBuf::from("./test2bar.json")]),
+            &[PathBuf::from("./foo.json")],
+            &Some(vec![PathBuf::from("./test2bar.json")]),
             vec![Extension::Json],
         )
         .unwrap();

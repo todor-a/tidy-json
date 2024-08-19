@@ -19,7 +19,6 @@ tidy-json **/*.json --write
 ```
 
 ## Options
-
 ```
 Usage: tidy-json [OPTIONS] <INCLUDE>...
 
@@ -27,13 +26,15 @@ Arguments:
   <INCLUDE>...  File patterns to process (e.g., *.json)
 
 Options:
-  -e, --exclude <EXCLUDE>  File patterns to exclude (e.g., *.json)
-  -w, --write              Write the sorted JSON back to the input files
-  -b, --backup             Create backups before modifying files
-  -d, --depth <DEPTH>      Specify how deep the sorting should go
-  -o, --order <ORDER>      Specify the sort order [default: asc] [possible values: asc, desc, rand]
-  -h, --help               Print help
-  -V, --version            Print version
+  -e, --exclude <EXCLUDE>            File patterns to exclude (e.g., *.json)
+  -w, --write                        Write the sorted JSON back to the input files
+  -b, --backup                       Create backups before modifying files
+  -d, --depth <DEPTH>                Specify how deep the sorting should go
+  -o, --order <ORDER>                Specify the sort order [default: asc] [possible values: asc, desc, rand]
+  -i, --indent <INDENT>              Specify the desired indent
+      --indent-style <INDENT_STYLE>  Specify the desired indent style [possible values: tabs, spaces]
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 
 ## Example
