@@ -55,6 +55,10 @@ struct Args {
     #[arg(short, long, default_value = "false")]
     backup: bool,
 
+    /// Specify how deep the sorting should go
+    #[arg(short, long)]
+    depth: Option<u32>,
+
     /// Specify the sort order
     #[arg(short = 'o', long, value_enum, default_value = "asc")]
     order: SortOrder,
@@ -106,7 +110,7 @@ fn run() -> Result<()> {
         .par_iter()
         .map(|path| {
             let file_start_time = Instant::now();
-            let result = process_file(path, args.write, args.backup, &args.order);
+            let result = process_file(path, args.write, args.backup, &args.order, args.depth);
             let duration = file_start_time.elapsed();
             (path, result, duration)
         })
@@ -146,13 +150,19 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn process_file(path: &PathBuf, write: bool, backup: bool, order: &SortOrder) -> Result<()> {
+fn process_file(
+    path: &PathBuf,
+    write: bool,
+    backup: bool,
+    order: &SortOrder,
+    depth: Option<u32>,
+) -> Result<()> {
     let data = fs::read_to_string(path)?;
     let json: Value = serde_json::from_str(&data)?;
 
     debug!("Using sort order {:?}", order);
 
-    let sorted_json = sort::sort(&json, order);
+    let sorted_json = sort::sort(&json, order, 0, depth);
 
     if write {
         if backup {

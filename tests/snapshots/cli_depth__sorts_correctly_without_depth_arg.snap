@@ -1,0 +1,14 @@
+---
+source: tests/cli_depth.rs
+description: should be sorted on all levels
+expression: content
+---
+Object {
+    "a": Number(1),
+    "b": Object {
+        "a": Number(2),
+        "b": Number(5),
+        "c": Number(1),
+    },
+    "c": Number(3),
+}
