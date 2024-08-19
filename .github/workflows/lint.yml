@@ -7,6 +7,15 @@ on:
 name: Check and Lint
 
 jobs:
+  typos:
+    name: Spell Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@v1.23.6
+        with:
+          files: .
+
   check:
     name: Check
     runs-on: ubuntu-latest
