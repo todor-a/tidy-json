@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.4] - 2024-08-19
 
+### 🚀 Features
+
+- Improve indent support ([#28](https://github.com/todor-a/tidy-json/pull/28))
+
 ### ⚙️ Miscellaneous Tasks
 
 - Fix name in readme
