@@ -16,7 +16,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal
       - uses: Swatinem/rust-cache@v2
       - name: setup toolchain
-        uses: hecrj/setup-rust-action@v1
+        uses: hecrj/setup-rust-action@v2
         with:
           rust-version: stable
       - run: cargo build --verbose
