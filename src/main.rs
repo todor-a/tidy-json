@@ -1,7 +1,7 @@
 use clap::{CommandFactory, Parser, ValueEnum};
 use colored::*;
 use glob::GlobError;
-use log::{debug, error, info, LevelFilter};
+use log::{error, info, LevelFilter};
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
@@ -56,7 +56,7 @@ pub enum LogLevel {
 impl LogLevel {
     pub fn to_level_filter(&self) -> LevelFilter {
         match self {
-            LogLevel::Quiet => LevelFilter::Off,
+            LogLevel::Quiet => LevelFilter::Error,
             LogLevel::Default => LevelFilter::Error,
             LogLevel::Verbose => LevelFilter::Debug,
         }
