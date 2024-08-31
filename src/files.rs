@@ -1,12 +1,8 @@
 use anyhow::*;
 use glob::{MatchOptions, Pattern};
 use ignore::WalkBuilder;
-#[cfg(not(test))]
 use log::debug;
 use std::path::{Path, PathBuf};
-
-#[cfg(test)]
-use std::println as debug;
 
 #[derive(Debug, PartialEq)]
 pub enum Extension {
