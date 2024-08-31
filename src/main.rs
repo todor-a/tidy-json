@@ -169,8 +169,6 @@ fn run(args: Args) -> Result<()> {
         indent_style: args.indent_style,
     };
 
-    debug!("Running with configuration {:?}", &cfg);
-
     let files =
         files::list_files(&cfg.include, &cfg.exclude, vec![files::Extension::Json]).unwrap();
 
