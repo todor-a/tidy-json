@@ -1,7 +1,7 @@
 use clap::{CommandFactory, Parser, ValueEnum};
 use colored::*;
 use glob::GlobError;
-use log::{debug, error, info};
+use log::{debug, error, info, LevelFilter};
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
@@ -43,6 +43,26 @@ pub enum IndentStyle {
     Spaces,
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+pub enum LogLevel {
+    #[clap()]
+    Quiet,
+    #[clap()]
+    Default,
+    #[clap()]
+    Verbose,
+}
+
+impl LogLevel {
+    pub fn to_level_filter(&self) -> LevelFilter {
+        match self {
+            LogLevel::Quiet => LevelFilter::Off,
+            LogLevel::Default => LevelFilter::Error,
+            LogLevel::Verbose => LevelFilter::Debug,
+        }
+    }
+}
+
 type Result<T> = std::result::Result<T, CustomError>;
 
 #[derive(Parser, Debug)]
@@ -79,6 +99,10 @@ struct Args {
     /// Specify the desired indent style
     #[arg(long)]
     indent_style: Option<IndentStyle>,
+
+    /// Specify the log level
+    #[arg(value_enum, long, default_value_t=LogLevel::Default)]
+    log_level: LogLevel,
 }
 
 #[derive(Debug)]
@@ -94,36 +118,38 @@ struct Configuration {
 }
 
 fn print_error(err: &CustomError) {
-    eprintln!("{} {}", "Error:".red().bold(), err);
+    error!("{} {}", "Error:".red().bold(), err);
     match err {
         CustomError::Custom(msg) if msg == "No JSON files found matching the provided patterns" => {
-            eprintln!(
+            error!(
                 "{}",
                 "Make sure the file patterns are correct and the files exist.".yellow()
             );
             if let Err(err) = Args::command().print_help() {
-                eprintln!("Failed to print help message: {}", err);
+                error!("Failed to print help message: {}", err);
             }
         }
         _ => {
             if let Err(err) = Args::command().print_help() {
-                eprintln!("Failed to print help message: {}", err);
+                error!("Failed to print help message: {}", err);
             }
         }
     }
 }
 
 fn main() -> Result<()> {
-    env_logger::init();
-    if let Err(e) = run() {
+    let args = Args::parse();
+    env_logger::builder()
+        .filter_level(args.log_level.to_level_filter())
+        .init();
+    if let Err(e) = run(args) {
         print_error(&e);
         std::process::exit(1);
     } else {
         Ok(())
     }
 }
-fn run() -> Result<()> {
-    let args = Args::parse();
+fn run(args: Args) -> Result<()> {
     let start_time = Instant::now();
 
     if args.include.is_empty() {
@@ -170,7 +196,7 @@ fn run() -> Result<()> {
                 path.display().to_string().green(),
                 duration
             ),
-            Err(e) => eprintln!(
+            Err(e) => error!(
                 "{}: {} (in {:.2?})",
                 path.display().to_string().red(),
                 e,
@@ -181,7 +207,7 @@ fn run() -> Result<()> {
 
     let total_duration = start_time.elapsed();
 
-    println!(
+    info!(
         "{}",
         format!(
             "Processed {} file(s) in {:.2?}",
@@ -213,7 +239,7 @@ fn process_file(path: &PathBuf, cfg: &Configuration) -> Result<()> {
         info!("Sorted JSON written back to {:?}", path);
     } else {
         serde_json::to_string_pretty(&sorted_json)?;
-        info!("Sorted {:?}.\n", path);
+        info!("Sorted {:?}.", path);
     }
 
     Ok(())
