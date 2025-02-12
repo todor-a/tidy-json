@@ -27,7 +27,7 @@ insta = { version = "1.39.0", features = ["json"] }
 tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
-rstest = "0.23.0"
+rstest = "0.24.0"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
