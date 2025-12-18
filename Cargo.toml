@@ -1,6 +1,6 @@
 [package]
 name = "tidy-json"
-version = "0.2.5"
+version = "0.2.7"
 license = "MIT"
 edition = "2021"
 default-run = "tidy-json"
@@ -13,12 +13,12 @@ clap = { version = "4.0", features = ["derive"] }
 glob = "0.3"
 ignore = "0.4"
 serde_json = { version = "1.0", features = ["preserve_order"] }
-thiserror = "1.0"
+thiserror = "2.0"
 log = "0.4"
 env_logger = "0.11"
 rayon = "1.5"
 colored = "2.0"
-rand = "0.8"
+rand = "0.9"
 anyhow = "1.0"
 serde = { version = "1.0.0", features = ["derive"] }
 
@@ -27,7 +27,7 @@ insta = { version = "1.39.0", features = ["json"] }
 tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
-rstest = "0.22.0"
+rstest = "0.24.0"
 criterion = "0.5"
 
 [[bench]]
