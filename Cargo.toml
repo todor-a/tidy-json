@@ -28,6 +28,11 @@ tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 rstest = "0.22.0"
+criterion = "0.5"
+
+[[bench]]
+name = "sort_benchmark"
+harness = false
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
