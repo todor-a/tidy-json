@@ -28,7 +28,7 @@ pub fn sort(
                 SortOrder::KeyLengthAsc => entries.sort_by(|(a, _), (b, _)| a.len().cmp(&b.len())),
                 SortOrder::KeyLengthDesc => entries.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len())),
                 SortOrder::Random => {
-                    let mut rng = rand::thread_rng();
+                    let mut rng = rand::rng();
                     entries.shuffle(&mut rng);
                 }
             }
