@@ -30,7 +30,7 @@ Options:
   -w, --write                        Write the sorted JSON back to the input files
   -b, --backup                       Create backups before modifying files
   -d, --depth <DEPTH>                Specify how deep the sorting should go
-  -o, --order <ORDER>                Specify the sort order [default: asc] [possible values: asc, desc, rand]
+  -o, --order <ORDER>                Specify the sort order [default: asc] [possible values: asc, desc, rand, key-length-asc, key-length-desc]
   -i, --indent <INDENT>              Specify the desired indent
       --indent-style <INDENT_STYLE>  Specify the desired indent style [possible values: tabs, spaces]
   -h, --help                         Print help

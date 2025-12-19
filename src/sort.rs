@@ -25,8 +25,10 @@ pub fn sort(
             match order {
                 SortOrder::AlphabeticalAsc => entries.sort_by(|(a, _), (b, _)| a.cmp(b)),
                 SortOrder::AlphabeticalDesc => entries.sort_by(|(a, _), (b, _)| b.cmp(a)),
+                SortOrder::KeyLengthAsc => entries.sort_by(|(a, _), (b, _)| a.len().cmp(&b.len())),
+                SortOrder::KeyLengthDesc => entries.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len())),
                 SortOrder::Random => {
-                    let mut rng = rand::thread_rng();
+                    let mut rng = rand::rng();
                     entries.shuffle(&mut rng);
                 }
             }
@@ -243,6 +245,32 @@ mod tests {
         }"#;
         let json: Value = serde_json::from_str(data).unwrap();
         let sorted_obj = sort(&json, &SortOrder::AlphabeticalAsc, 0, None);
+        assert_debug_snapshot!(sorted_obj);
+    }
+
+    #[test]
+    fn test_sort_json_key_length_asc() {
+        let data = r#"
+        {
+            "cc": 2,
+            "bbb": 3,
+            "a": 1
+        }"#;
+        let json: Value = serde_json::from_str(data).unwrap();
+        let sorted_obj = sort(&json, &SortOrder::KeyLengthAsc, 0, None);
+        assert_debug_snapshot!(sorted_obj);
+    }
+
+    #[test]
+    fn test_sort_json_key_length_desc() {
+        let data = r#"
+        {
+            "a": 1,
+            "cc": 2,
+            "bbb": 3
+        }"#;
+        let json: Value = serde_json::from_str(data).unwrap();
+        let sorted_obj = sort(&json, &SortOrder::KeyLengthDesc, 0, None);
         assert_debug_snapshot!(sorted_obj);
     }
 
