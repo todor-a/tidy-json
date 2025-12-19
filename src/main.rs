@@ -10,8 +10,10 @@ use std::path::PathBuf;
 use std::time::Instant;
 use thiserror::Error;
 
+use tidy_json::sort;
+use tidy_json::SortOrder;
+
 mod files;
-mod sort;
 
 #[derive(Error, Debug)]
 enum CustomError {
@@ -23,16 +25,6 @@ enum CustomError {
     Glob(#[from] GlobError),
     #[error("{0}")]
     Custom(String),
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-pub enum SortOrder {
-    #[clap(name = "asc", alias = "alphabetical-asc", alias = "a")]
-    AlphabeticalAsc,
-    #[clap(name = "desc", alias = "alphabetical-desc", alias = "d")]
-    AlphabeticalDesc,
-    #[clap(name = "rand", alias = "random", alias = "r")]
-    Random,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
