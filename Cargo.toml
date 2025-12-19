@@ -17,7 +17,7 @@ thiserror = "2.0"
 log = "0.4"
 env_logger = "0.11"
 rayon = "1.5"
-colored = "2.0"
+colored = "3.0"
 rand = "0.9"
 anyhow = "1.0"
 serde = { version = "1.0.0", features = ["derive"] }
@@ -27,7 +27,12 @@ insta = { version = "1.39.0", features = ["json"] }
 tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
-rstest = "0.24.0"
+rstest = "0.25.0"
+criterion = "0.5"
+
+[[bench]]
+name = "sort_benchmark"
+harness = false
 
 # The profile that 'cargo dist' will build with
 [profile.dist]

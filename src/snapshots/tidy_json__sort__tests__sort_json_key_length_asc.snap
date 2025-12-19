@@ -1,0 +1,9 @@
+---
+source: src/sort.rs
+expression: sorted_obj
+---
+Object {
+    "a": Number(1),
+    "cc": Number(2),
+    "bbb": Number(3),
+}
