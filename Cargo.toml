@@ -28,7 +28,7 @@ tempfile = "3.2"
 assert_cmd = "2.0.14"
 predicates = "3.1.0"
 rstest = "0.25.0"
-criterion = "0.5"
+criterion = "0.8"
 
 [[bench]]
 name = "sort_benchmark"
