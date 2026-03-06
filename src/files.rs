@@ -7,12 +7,14 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, PartialEq)]
 pub enum Extension {
     Json,
+    Jsonc,
 }
 
 impl Extension {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Json => "json",
+            Self::Jsonc => "jsonc",
         }
     }
 }

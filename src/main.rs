@@ -323,7 +323,11 @@ fn run(cfg: &Configuration) -> Result<()> {
     }
 
     let start_time = Instant::now();
-    let files = files::list_files(&cfg.include, &cfg.exclude, vec![files::Extension::Json])?;
+    let files = files::list_files(
+        &cfg.include,
+        &cfg.exclude,
+        vec![files::Extension::Json, files::Extension::Jsonc],
+    )?;
 
     if files.is_empty() {
         return Err(CustomError::Custom(
