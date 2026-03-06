@@ -1,0 +1,10 @@
+---
+source: src/sort.rs
+expression: sorted_obj
+---
+Object {
+    "a": Number(1),
+    "bb": Number(2),
+    "cat": Number(4),
+    "zebra": Number(3),
+}
