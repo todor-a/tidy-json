@@ -27,6 +27,9 @@ pub fn sort(
                 SortOrder::AlphabeticalDesc => entries.sort_by(|(a, _), (b, _)| b.cmp(a)),
                 SortOrder::KeyLengthAsc => entries.sort_by(|(a, _), (b, _)| a.len().cmp(&b.len())),
                 SortOrder::KeyLengthDesc => entries.sort_by(|(a, _), (b, _)| b.len().cmp(&a.len())),
+                SortOrder::LineLength => {
+                    entries.sort_by(|(a, _), (b, _)| a.len().cmp(&b.len()).then_with(|| a.cmp(b)))
+                }
                 SortOrder::Random => {
                     let mut rng = rand::rng();
                     entries.shuffle(&mut rng);
@@ -271,6 +274,20 @@ mod tests {
         }"#;
         let json: Value = serde_json::from_str(data).unwrap();
         let sorted_obj = sort(&json, &SortOrder::KeyLengthDesc, 0, None);
+        assert_debug_snapshot!(sorted_obj);
+    }
+
+    #[test]
+    fn test_sort_json_line_length() {
+        let data = r#"
+        {
+            "zebra": 3,
+            "bb": 2,
+            "a": 1,
+            "cat": 4
+        }"#;
+        let json: Value = serde_json::from_str(data).unwrap();
+        let sorted_obj = sort(&json, &SortOrder::LineLength, 0, None);
         assert_debug_snapshot!(sorted_obj);
     }
 

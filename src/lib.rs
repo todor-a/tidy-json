@@ -14,4 +14,6 @@ pub enum SortOrder {
     KeyLengthAsc,
     #[clap(name = "key-length-desc", alias = "len-desc", alias = "kld")]
     KeyLengthDesc,
+    #[clap(name = "line-length", alias = "ll")]
+    LineLength,
 }
