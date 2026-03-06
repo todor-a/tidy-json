@@ -1,6 +1,6 @@
 [package]
 name = "tidy-json"
-version = "0.2.8"
+version = "0.2.9"
 license = "MIT"
 edition = "2021"
 default-run = "tidy-json"
