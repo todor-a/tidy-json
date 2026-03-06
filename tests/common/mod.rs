@@ -60,7 +60,10 @@ pub fn extract_processed_files(output: &[u8]) -> Vec<String> {
     output_str
         .lines()
         .filter(|line| line.contains(": Processed in"))
-        .map(|line| line.split(':').next().unwrap_or("").to_string())
+        .filter_map(|line| {
+            line.split_once(": Processed in")
+                .map(|(path, _)| normalize_path_for_match(path))
+        })
         .collect()
 }
 
@@ -99,7 +102,10 @@ pub fn assert_file_processed(
     file_name: &str,
     should_be_processed: bool,
 ) {
-    let file_processed = processed_files.iter().any(|s| s.contains(file_name));
+    let normalized_file_name = normalize_path_for_match(file_name);
+    let file_processed = processed_files
+        .iter()
+        .any(|s| s.contains(&normalized_file_name));
     if should_be_processed {
         assert!(
             file_processed,
@@ -113,4 +119,8 @@ pub fn assert_file_processed(
             file_name
         );
     }
+}
+
+fn normalize_path_for_match(path: &str) -> String {
+    path.replace('\\', "/")
 }

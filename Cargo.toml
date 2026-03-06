@@ -7,6 +7,10 @@ default-run = "tidy-json"
 description = "A cli for tidying up json files."
 homepage = "https://github.com/todor-a/tidy-json"
 repository = "https://github.com/todor-a/tidy-json"
+readme = "README.md"
+keywords = ["json", "formatter", "cli", "sort", "lint"]
+categories = ["command-line-utilities", "development-tools"]
+rust-version = "1.74"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
@@ -21,6 +25,8 @@ colored = "3.0"
 rand = "0.9"
 anyhow = "1.0"
 serde = { version = "1.0.0", features = ["derive"] }
+toml = "0.9"
+json5 = "0.4"
 
 [dev-dependencies]
 insta = { version = "1.39.0", features = ["json"] }
