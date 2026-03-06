@@ -1,9 +1,10 @@
 ---
 source: tests/cli_jsonc.rs
-assertion_line: 90
+assertion_line: 91
 expression: content
 ---
 {
   "a": 1,
+  // keep near b
   "b": 2
 }

@@ -5,6 +5,7 @@ use rayon::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;
@@ -457,6 +458,11 @@ fn process_file(path: &PathBuf, cfg: &Configuration) -> Result<ProcessOutcome> {
         }
 
         if changed {
+            let formatted_json = if is_jsonc(path) {
+                restore_jsonc_leading_comments(&data, &formatted_json)
+            } else {
+                formatted_json
+            };
             fs::write(path, &formatted_json)?;
             info!("Sorted JSON written back to {:?}", path);
         }
@@ -541,6 +547,110 @@ fn print_output(path: &PathBuf, output: &str, total_files: usize) {
         println!("--- {} ---", path.display());
     }
     println!("{output}");
+}
+
+fn is_jsonc(path: &PathBuf) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("jsonc"))
+        .unwrap_or(false)
+}
+
+fn restore_jsonc_leading_comments(original: &str, formatted: &str) -> String {
+    let mut comments_by_key = collect_leading_comments_by_key(original);
+    let mut result = Vec::new();
+
+    for line in formatted.lines() {
+        let trimmed = line.trim_start();
+        if let Some(key) = extract_object_key(trimmed) {
+            if let Some(queue) = comments_by_key.get_mut(&key) {
+                if let Some(comments) = queue.pop_front() {
+                    result.extend(comments);
+                }
+            }
+        }
+        result.push(line.to_string());
+    }
+
+    format!("{}\n", result.join("\n"))
+}
+
+fn collect_leading_comments_by_key(original: &str) -> HashMap<String, VecDeque<Vec<String>>> {
+    let mut by_key: HashMap<String, VecDeque<Vec<String>>> = HashMap::new();
+    let mut pending_comments: Vec<String> = Vec::new();
+    let mut in_block_comment = false;
+
+    for line in original.lines() {
+        let trimmed = line.trim_start();
+
+        if in_block_comment {
+            pending_comments.push(line.to_string());
+            if trimmed.contains("*/") {
+                in_block_comment = false;
+            }
+            continue;
+        }
+
+        if trimmed.starts_with("//") {
+            pending_comments.push(line.to_string());
+            continue;
+        }
+
+        if trimmed.starts_with("/*") {
+            pending_comments.push(line.to_string());
+            if !trimmed.contains("*/") {
+                in_block_comment = true;
+            }
+            continue;
+        }
+
+        if let Some(key) = extract_object_key(trimmed) {
+            if !pending_comments.is_empty() {
+                by_key
+                    .entry(key)
+                    .or_default()
+                    .push_back(std::mem::take(&mut pending_comments));
+            }
+            continue;
+        }
+
+        if !trimmed.is_empty() {
+            pending_comments.clear();
+        }
+    }
+
+    by_key
+}
+
+fn extract_object_key(trimmed: &str) -> Option<String> {
+    if !trimmed.starts_with('"') {
+        return None;
+    }
+
+    let mut escaped = false;
+    let mut end_index = None;
+    for (index, ch) in trimmed.char_indices().skip(1) {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == '"' {
+            end_index = Some(index);
+            break;
+        }
+    }
+
+    let end_index = end_index?;
+    let remainder = trimmed[end_index + 1..].trim_start();
+    if !remainder.starts_with(':') {
+        return None;
+    }
+
+    Some(trimmed[1..end_index].to_string())
 }
 
 #[cfg(test)]

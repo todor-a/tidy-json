@@ -25,7 +25,8 @@ fn test_jsonc_file_is_processed() -> Result<(), Box<dyn std::error::Error>> {
     let content = fs::read_to_string(&file_path)?;
     assert!(content.contains("\"a\": 1"));
     assert!(content.contains("\"b\": 2"));
-    assert!(!content.contains("// comment"));
+    assert!(content.contains("// comment"));
+    assert!(content.find("// comment").expect("comment") < content.find("\"b\"").expect("b"));
 
     Ok(())
 }
@@ -88,6 +89,40 @@ fn test_jsonc_comment_output_snapshot() -> Result<(), Box<dyn std::error::Error>
     let content = fs::read_to_string(&file_path)?;
     // Current JSONC parsing normalizes to JSON and strips comments.
     assert_snapshot!(content);
+
+    Ok(())
+}
+
+#[test]
+fn test_jsonc_comment_moves_with_sorted_key() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = common::setup_test_directory();
+    let temp_path = temp_dir.path();
+    let file_path = temp_path.join("commented-order.jsonc");
+
+    common::create_file(
+        &file_path,
+        r#"{
+  // this belongs to z
+  "z": 9,
+  "a": 1
+}"#,
+    );
+
+    let mut cmd = common::run_cli("**/*.jsonc", &["--write"], temp_path);
+    cmd.assert().success();
+
+    let content = fs::read_to_string(&file_path)?;
+    let comment_idx = content
+        .find("// this belongs to z")
+        .expect("comment should be present");
+    let z_idx = content.find("\"z\": 9").expect("z key should be present");
+    let a_idx = content.find("\"a\": 1").expect("a key should be present");
+
+    assert!(a_idx < comment_idx, "a should be before moved comment");
+    assert!(
+        comment_idx < z_idx,
+        "comment should remain directly above z"
+    );
 
     Ok(())
 }
