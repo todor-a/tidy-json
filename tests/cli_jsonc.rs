@@ -1,4 +1,5 @@
 use assert_cmd::prelude::*;
+use insta::assert_snapshot;
 use std::fs;
 
 pub mod common;
@@ -62,6 +63,31 @@ fn test_json_and_jsonc_patterns_work_together() -> Result<(), Box<dyn std::error
 
     assert!(json_content.find("\"a\"").expect("a") < json_content.find("\"z\"").expect("z"));
     assert!(jsonc_content.find("\"a\"").expect("a") < jsonc_content.find("\"z\"").expect("z"));
+
+    Ok(())
+}
+
+#[test]
+fn test_jsonc_comment_output_snapshot() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = common::setup_test_directory();
+    let temp_path = temp_dir.path();
+    let file_path = temp_path.join("commented.jsonc");
+
+    common::create_file(
+        &file_path,
+        r#"{
+  // keep near b
+  "b": 2,
+  "a": 1,
+}"#,
+    );
+
+    let mut cmd = common::run_cli("**/*.jsonc", &["--write"], temp_path);
+    cmd.assert().success();
+
+    let content = fs::read_to_string(&file_path)?;
+    // Current JSONC parsing normalizes to JSON and strips comments.
+    assert_snapshot!(content);
 
     Ok(())
 }
