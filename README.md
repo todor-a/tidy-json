@@ -1,6 +1,6 @@
 # 🧹 tidy-json
 
-A CLI tool for sorting JSON files.
+A CLI tool for sorting JSON and JSONC files.
 
 ## Install
 
@@ -50,7 +50,7 @@ indent_style = "spaces"
 Usage: tidy-json [OPTIONS] <INCLUDE>...
 
 Arguments:
-  <INCLUDE>...  File patterns to process (e.g., *.json)
+  <INCLUDE>...  File patterns to process (e.g., *.json, *.jsonc)
 
 Options:
   -e, --exclude <EXCLUDE>            File patterns to exclude (e.g., *.json)
