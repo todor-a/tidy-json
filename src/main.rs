@@ -461,7 +461,7 @@ fn process_file(path: &PathBuf, cfg: &Configuration) -> Result<ProcessOutcome> {
             let formatted_json = if is_jsonc(path) {
                 restore_jsonc_leading_comments(&data, &formatted_json)
             } else {
-                formatted_json
+                formatted_json.clone()
             };
             fs::write(path, &formatted_json)?;
             info!("Sorted JSON written back to {:?}", path);
