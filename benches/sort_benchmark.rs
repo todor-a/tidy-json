@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use serde_json::Value;
+use std::hint::black_box;
 
 use tidy_json::sort::sort;
 use tidy_json::SortOrder;
